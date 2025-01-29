@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd">
+	<munit:config name="error-handler-unit-test-suite.xml" />
+	<munit:test name="error-handler-unit-test-suite-known-error-test" doc:id="32435af3-943b-4e0c-a527-284611c8c589" >
+		<munit:execution >
+			<try doc:name="Try" doc:id="5e1e4d36-1bd7-4b90-94ec-1efa0145cab0" >
+				<raise-error doc:name="DB:NOT_FOUND" doc:id="bd22ce66-5ad9-479c-9ba2-69acc80f080a" type="DB:NOT_FOUND" description="Resource not found."/>
+				<error-handler ref="abc-global-error-handler" />
+			</try>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-equals doc:name="Assert httpStatus value" doc:id="8770595c-2110-4efb-bc1a-4d68e49e22a5" actual="#[vars.httpStatus]" expected="#[404]" message="Status assertion failed"/>
+			<munit-tools:assert doc:name="Assert error payload" doc:id="b97bf9cd-fd6b-4ee9-a682-84b9d77f75fa" message="Assertion for error payload failed.">
+				<munit-tools:that ><![CDATA[#[import * from dw::test::Asserts 
+ ---
+payload must [
+	beObject(),
+	haveKey("message"),
+	haveKey("type"),
+	haveKey("status"),
+	$."type" must equalTo("DB:NOT_FOUND"),
+	$."status" must equalTo(Mule::p("status.error")),
+	$.message must equalTo("Resource not found.")
+]]]]></munit-tools:that>
+			</munit-tools:assert>
+		</munit:validation>
+	</munit:test>
+	<munit:test name="error-handler-unit-test-suite-unknown-error-test" doc:id="81fb185d-b39e-4089-b5c5-7dd6d2e40814" >
+		<munit:execution >
+			<try doc:name="Try" doc:id="942c9fa5-27da-4b35-a3bd-c094718164f4" >
+				<raise-error doc:name="Raise error" doc:id="1df6970f-eed8-45bc-b3ff-68f86cf036c8" type="ABC:UNKNOWN" description="Description is very important." />
+				<error-handler ref="abc-global-error-handler" />
+			</try>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-equals doc:name="Assert httpStatus value" doc:id="9455d2b8-909d-4a20-ad09-e07c857e0889" actual="#[vars.httpStatus]" expected="#[500]" message="Status assertion failed" />
+			<munit-tools:assert doc:name="Assert error payload" doc:id="fb56a193-434b-4c14-9c81-7caaf8371083" message="Assertion for error payload failed." >
+				<munit-tools:that ><![CDATA[#[import * from dw::test::Asserts 
+ ---
+payload must [
+	beObject(),
+	haveKey("message"),
+	haveKey("type"),
+	haveKey("status"),
+	$."type" must equalTo("ABC:UNKNOWN"),
+	$."status" must equalTo(Mule::p("status.error")),
+	$.message must equalTo("Description is very important.")
+]]]]></munit-tools:that>
+			</munit-tools:assert>
+		</munit:validation>
+	</munit:test>
+
+</mule>

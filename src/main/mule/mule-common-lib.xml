@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<configuration-properties doc:name="Configuration properties" doc:id="5744f270-3149-4f59-940b-3b1d2c13ca52" file="properties/error-mappings.yaml" />
+	<error-handler name="abc-global-error-handler" doc:id="3390ae5f-dd23-4045-82c3-5960b521f7c8" >
+		<on-error-continue enableNotifications="false" logException="false" doc:name="On Error Continue " doc:id="3c4a5c5e-99f3-470c-be93-d52aca42e444" type="ANY">
+			<ee:transform doc:name="payload" doc:id="556a20cf-8f56-4142-bed2-4e712069bf11" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: Mule::p("status.error"),
+	"type": if(error.errorMessage? and error.errorMessage.payload?) error.errorMessage.payload["type"]
+			else "$(error.errorType.namespace):$(error.errorType.identifier)",
+	message: if(error.errorMessage? and error.errorMessage.payload?) error.errorMessage.payload["message"]
+			else error.description
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<ee:transform doc:name="var: httpStatus" doc:id="94cd7d45-6f8c-4f1a-b447-871a912d72ec">
+				<ee:message>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="httpStatus"><![CDATA[%dw 2.0
+output application/java
+var identifierType = (payload["type"] splitBy ":")[1]
+---
+Mule::p("identifiers.$(identifierType)") as Number
+default (Mule::p("status.defaultCode") as Number)]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		</on-error-continue>
+	</error-handler>
+</mule>
